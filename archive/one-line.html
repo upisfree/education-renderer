@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+body {
+  overflow: hidden;
+}
+
+canvas {
+  transform: rotate(180deg); /* костыль, который аукнется */
+}
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+
+    <script>
+function onresize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
+
+window.addEventListener('resize', onresize);
+
+function drawLine(v1, v2, color) {
+  context.save();
+
+  context.beginPath();
+
+  context.strokeStyle = color;
+
+  context.moveTo(v1.x, v1.y);
+  context.lineTo(v2.x, v2.y);
+
+  context.stroke();
+
+  context.closePath();
+
+  context.restore();
+}
+
+function loadModel(callback) {
+  let xhr = new XMLHttpRequest();
+
+  xhr.open('GET', 'head.obj', true);
+  xhr.send();
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) {
+      return;
+    }
+
+    if (xhr.status === 200) {
+      callback(xhr.responseText);
+    } else {
+      console.log(xhr.status + ': ' + xhr.statusText);
+    }
+  }
+}
+
+function parseModel(raw) {
+  let rows = raw.split('\n');
+  let vertexes = rows.filter(v => v.indexOf('v ') === 0);
+  let vectors = vertexes.map((v) => {
+    let r = v.split(' ');
+
+    return {
+      x: parseFloat(r[1]),
+      y: parseFloat(r[2]),
+      z: parseFloat(r[3])
+    };
+  });
+
+  return vectors;
+}
+
+var canvas = document.querySelector('canvas');
+var context = canvas.getContext('2d');
+
+var modelScale = 300;
+
+onresize();
+
+loadModel((raw) => {
+  let vectors = parseModel(raw);
+
+  for (let i = 0; i < vectors.length; i++) {
+    let v1 = vectors[i];
+    let v2 = vectors[i + 1];
+
+    if (v2) {
+      let cx = canvas.width / 2;
+      let cy = canvas.height / 2;
+
+      let x1 = cx + v1.x * modelScale;
+      let y1 = cy + v1.y * modelScale;
+      let x2 = cx + v2.x * modelScale;
+      let y2 = cy + v2.y * modelScale;
+
+      drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, '#000');
+    }
+  }
+});
+    </script>
+  </body>
+</html>
